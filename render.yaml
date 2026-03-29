@@ -3,6 +3,7 @@ services:
   - type: web
     name: task-backend
     env: python
+    plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app
