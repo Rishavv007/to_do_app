@@ -82,7 +82,7 @@ function TaskForm() {
     setAiLoading(true)
     setErrors({})
     try {
-      const suggestion = await getAiSuggestion(formData.title, formData.description)
+      const suggestion = await getAiSuggestion(formData.title, formData.description, formData.deadline)
       setAiSuggestion(suggestion)
     } catch (err) {
       alert(err.message || 'AI request failed')

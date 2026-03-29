@@ -42,5 +42,9 @@ def suggest():
     except ValidationError as err:
         return jsonify({"error": "Validation failed", "details": err.messages}), 400
         
-    suggestion = evaluate_task_with_ai(validated.get('title'), validated.get('description', ''))
+    suggestion = evaluate_task_with_ai(
+        validated.get('title'), 
+        validated.get('description', ''),
+        validated.get('deadline')
+    )
     return jsonify(suggestion), 200

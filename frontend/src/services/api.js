@@ -44,11 +44,11 @@ export const deleteTask = async (id) => {
   return res.json();
 };
 
-export const getAiSuggestion = async (title, description) => {
+export const getAiSuggestion = async (title, description, deadline = null) => {
   const res = await fetch(`${API_URL}/tasks/suggest`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify({ title, description, deadline }),
   });
   if (!res.ok) {
     const err = await res.json();

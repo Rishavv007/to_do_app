@@ -35,6 +35,7 @@ tasks_schema = TaskSchema(many=True)
 class AISuggestionSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1))
     description = fields.Str(allow_none=True)
+    deadline = fields.Date(allow_none=True, load_default=None)
 
 
 class AIResponseSchema(Schema):
