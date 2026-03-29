@@ -1,0 +1,36 @@
+services:
+  # Python Flask Backend
+  - type: web
+    name: task-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      # Requires you to enter this in the Render dashboard manually for security
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # React Frontend (Static Site)
+  - type: web
+    name: task-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      # Automatically links the live Python backend URL to your React app!
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: task-backend
+          property: url
+    routes:
+      # Fixes the React Router 404 client-side routing issue natively
+      - type: rewrite
+        source: /*
+        destination: /index.html
