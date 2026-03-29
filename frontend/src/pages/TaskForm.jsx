@@ -31,6 +31,7 @@ function TaskForm() {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiSuggestion, setAiSuggestion] = useState(null)
 
   useEffect(() => {
     if (isEdit) {
@@ -82,32 +83,7 @@ function TaskForm() {
     setErrors({})
     try {
       const suggestion = await getAiSuggestion(formData.title, formData.description, formData.deadline)
-      
-      // Auto-apply the AI suggestions immediately so the user can just hit Save Task
-      const updates = { priority: suggestion.priority }
-      
-      // We strictly ensure deadline_days handles 0 as a valid offset
-      if (typeof suggestion.deadline_days === 'number') {
-        const targetDate = new Date()
-        targetDate.setDate(targetDate.getDate() + suggestion.deadline_days)
-        updates.deadline = targetDate.toISOString().split('T')[0]
-      }
-
-      setFormData((prev) => {
-        let currentDesc = prev.description || ''
-        let finalDesc = currentDesc.trim()
-        
-        if (suggestion.subtasks && suggestion.subtasks.length > 0) {
-          const subtasksText = '\n\nSubtasks:\n' + suggestion.subtasks.map((t) => `- ${t}`).join('\n')
-          finalDesc = finalDesc + subtasksText
-        }
-        
-        return {
-          ...prev,
-          ...updates,
-          description: finalDesc
-        }
-      })
+      setAiSuggestion(suggestion)
     } catch (err) {
       alert(err.message || 'AI request failed')
     } finally {
@@ -115,15 +91,64 @@ function TaskForm() {
     }
   }
 
+  const applyAiSuggestion = () => {
+    if (!aiSuggestion) return
+
+    const updates = { priority: aiSuggestion.priority }
+    if (typeof aiSuggestion.deadline_days === 'number') {
+      const targetDate = new Date()
+      targetDate.setDate(targetDate.getDate() + aiSuggestion.deadline_days)
+      updates.deadline = targetDate.toISOString().split('T')[0]
+    }
+
+    setFormData((prev) => {
+      let currentDesc = prev.description || ''
+      let finalDesc = currentDesc.trim()
+      
+      if (aiSuggestion.subtasks && aiSuggestion.subtasks.length > 0) {
+        const subtasksText = '\n\nSubtasks:\n' + aiSuggestion.subtasks.map((t) => `- ${t}`).join('\n')
+        finalDesc = finalDesc + subtasksText
+      }
+      
+      console.log('Final Description before update:', finalDesc)
+      
+      return {
+        ...prev,
+        ...updates,
+        description: finalDesc
+      }
+    })
+
+    setAiSuggestion(null)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
 
+    let finalData = { ...formData }
+
+    // Eagerly merge any visible AI suggestions that the user hasn't actively clicked 'Apply' for
+    if (aiSuggestion) {
+      finalData.priority = aiSuggestion.priority
+      if (typeof aiSuggestion.deadline_days === 'number') {
+        const targetDate = new Date()
+        targetDate.setDate(targetDate.getDate() + aiSuggestion.deadline_days)
+        finalData.deadline = targetDate.toISOString().split('T')[0]
+      }
+      if (aiSuggestion.subtasks && aiSuggestion.subtasks.length > 0) {
+        let currentDesc = finalData.description || ''
+        let finalDesc = currentDesc.trim()
+        finalDesc += '\n\nSubtasks:\n' + aiSuggestion.subtasks.map((t) => `- ${t}`).join('\n')
+        finalData.description = finalDesc
+      }
+    }
+
     // Ensure empty dates are sent as null to satisfy backend schema
     const payload = {
-      ...formData,
-      deadline: formData.deadline === '' ? null : formData.deadline
+      ...finalData,
+      deadline: finalData.deadline === '' ? null : finalData.deadline
     }
 
     try {
@@ -220,15 +245,66 @@ function TaskForm() {
         {/* AI Suggestion Button */}
         <Button
           type="button"
-          variant="flat"
+          variant="bordered"
           color="secondary"
-          className="w-full flex justify-center items-center"
+          className="w-full"
           onPress={handleAiSuggest}
           isDisabled={aiLoading || !formData.title}
           isLoading={aiLoading}
         >
-          ✨ Auto-Fill Priority & Subtasks
+          ✨ Suggest Priority & Subtasks
         </Button>
+
+        {/* AI Suggestion Results */}
+        {aiSuggestion && (
+          <Card className="p-4 bg-secondary-50 border border-secondary-200">
+            <h4 className="text-md font-semibold text-secondary mb-2">
+              AI Suggestions
+            </h4>
+            <div className="flex flex-col gap-1 text-sm text-foreground">
+              <p>
+                <span className="font-medium">Priority:</span>{' '}
+                <Chip
+                  size="sm"
+                  color={
+                    aiSuggestion.priority === 'HIGH'
+                      ? 'danger'
+                      : aiSuggestion.priority === 'MEDIUM'
+                      ? 'warning'
+                      : 'success'
+                  }
+                  variant="flat"
+                >
+                  {aiSuggestion.priority}
+                </Chip>
+              </p>
+              {aiSuggestion.deadline_days && (
+                <p>
+                  <span className="font-medium">Deadline:</span> In {aiSuggestion.deadline_days} days
+                </p>
+              )}
+              {aiSuggestion.subtasks?.length > 0 && (
+                <div className="mt-1">
+                  <span className="font-medium">Subtasks:</span>
+                  <ul className="list-disc ml-5 mt-1">
+                    {aiSuggestion.subtasks.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <Button
+              size="sm"
+              color="secondary"
+              variant="solid"
+              className="mt-3"
+              onPress={applyAiSuggestion}
+            >
+              Apply Suggestions
+            </Button>
+          </Card>
+        )}
 
         {/* Actions */}
         <div className="flex justify-between items-center pt-4 border-t border-default-200">
