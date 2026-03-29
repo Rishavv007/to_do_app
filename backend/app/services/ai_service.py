@@ -13,7 +13,6 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
     Returns:
         {
             "priority": "HIGH" | "MEDIUM" | "LOW",
-            "deadline_days": int,
             "subtasks": ["...", "...", "..."]
         }
     """
@@ -26,13 +25,11 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
     
     # The prompt should be strictly JSON.
     prompt = f"""
-    Today's date is {today_str}.
     Given the task title '{title}' and description '{description}', please suggest:
     - priority (LOW, MEDIUM, or HIGH)
-    - a reasonable deadline in days from today (integer)
     - 3 actionable subtasks (list of strings)
 
-    Return ONLY valid JSON with keys: "priority", "deadline_days", "subtasks".
+    Return ONLY valid JSON with keys: "priority", "subtasks".
     """
     
     # Simulating LLM response for demonstration if no API key is provided, or we can use a mock
@@ -43,7 +40,6 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
         priority = "HIGH" if "urgent" in title.lower() or (description and "urgent" in description.lower()) else "MEDIUM"
         simulated_data = {
             "priority": priority,
-            "deadline_days": 3,
             "subtasks": [f"Understand {title}", "Implement solution", "Review and test"]
         }
         return _validate_ai_response(simulated_data)
@@ -91,6 +87,5 @@ def _fallback_response() -> dict:
     logger.warning("Using AI Safe-Fallback response.")
     return {
         "priority": "MEDIUM",
-        "deadline_days": 7,
         "subtasks": ["Analyze requirement", "Create implementation plan", "Execute plan"]
     }

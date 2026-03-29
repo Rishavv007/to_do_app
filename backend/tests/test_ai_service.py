@@ -6,7 +6,6 @@ def test_ai_suggestion():
     # Integration test hitting the heuristical fallback since no key is matched internally
     response = evaluate_task_with_ai("Test title", "Test Description")
     assert "priority" in response
-    assert "deadline_days" in response
     assert "subtasks" in response
     assert isinstance(response["subtasks"], list)
     assert response["priority"] in ["LOW", "MEDIUM", "HIGH"]
@@ -32,7 +31,6 @@ def test_ai_fallback_scenario_mock_failure(mock_post):
     
     # Assert fallback handles it gracefully
     assert response["priority"] == "MEDIUM"
-    assert response["deadline_days"] == 7
     assert "Analyze requirement" in response["subtasks"]
     del os.environ["OPENAI_API_KEY"]
 
@@ -40,12 +38,10 @@ def test_ai_response_validation():
     # Test our schema handles bad AI payload internally
     bad_payload = {
         "priority": "CRITICAL", # Invalid Enum
-        "deadline_days": "one week?", # Not int
         # missing subtasks
     }
     response = _validate_ai_response(bad_payload)
     
     # Ensure it rejected parsing and returned the safe fallback
     assert response["priority"] == "MEDIUM"
-    assert response["deadline_days"] == 7
     assert "Execute plan" in response["subtasks"]
