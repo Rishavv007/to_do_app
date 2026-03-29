@@ -101,7 +101,7 @@ function TaskList() {
               </div>
 
               {task.description && (
-                <p className="text-default-500 text-sm mb-3 whitespace-pre-line">
+                <p className="text-default-500 text-sm mb-3 whitespace-pre-wrap">
                   {task.description}
                 </p>
               )}

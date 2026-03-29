@@ -74,12 +74,12 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
 def _calculate_heuristic_deadline(priority: str) -> int:
     """Python native heuristic logic to calculate deadline rather than asking the LLM."""
     if priority == "HIGH":
-        return 2  # 2 days strict SLA
+        return 1  # 1 day strict SLA
     elif priority == "MEDIUM":
-        return 7  # 1 week SLA
+        return 3  # 3 days SLA
     elif priority == "LOW":
-        return 14 # 2 weeks SLA
-    return 7
+        return 7   # 1 week SLA
+    return 3
 
 def _validate_ai_response(data: dict) -> dict:
     """Uses Marshmallow to strictly validate AI output and sanitize."""

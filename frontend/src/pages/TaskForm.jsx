@@ -102,14 +102,20 @@ function TaskForm() {
     }
 
     setFormData((prev) => {
-      let newDesc = prev.description || ''
+      let currentDesc = prev.description || ''
+      let finalDesc = currentDesc.trim()
+      
       if (aiSuggestion.subtasks && aiSuggestion.subtasks.length > 0) {
-        newDesc += '\n\nSubtasks:\n' + aiSuggestion.subtasks.map((t) => `- ${t}`).join('\n')
+        const subtasksText = '\n\nSubtasks:\n' + aiSuggestion.subtasks.map((t) => `- ${t}`).join('\n')
+        finalDesc = finalDesc + subtasksText
       }
+      
+      console.log('Final Description before update:', finalDesc)
+      
       return {
         ...prev,
         ...updates,
-        description: newDesc.trim()
+        description: finalDesc
       }
     })
 
