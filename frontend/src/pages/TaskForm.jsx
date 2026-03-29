@@ -93,13 +93,10 @@ function TaskForm() {
 
   const applyAiSuggestion = () => {
     if (!aiSuggestion) return
-    const targetDate = new Date()
-    targetDate.setDate(targetDate.getDate() + aiSuggestion.deadline_days)
 
     setFormData((prev) => ({
       ...prev,
       priority: aiSuggestion.priority,
-      deadline: targetDate.toISOString().split('T')[0],
     }))
 
     if (aiSuggestion.subtasks && aiSuggestion.subtasks.length > 0) {
@@ -251,10 +248,6 @@ function TaskForm() {
                 >
                   {aiSuggestion.priority}
                 </Chip>
-              </p>
-              <p>
-                <span className="font-medium">Deadline:</span> In{' '}
-                {aiSuggestion.deadline_days} days
               </p>
               {aiSuggestion.subtasks?.length > 0 && (
                 <div className="mt-1">

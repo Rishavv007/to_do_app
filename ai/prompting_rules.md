@@ -13,6 +13,5 @@ When interacting with the system's LLM, the following rules MUST be strictly adh
 ## 3. Strict Schema Mapping (No Extra Fields)
 - The JSON output MUST ONLY contain the fields explicitly defined in the `AIResponseSchema`:
   - `priority`: Must be exactly `"LOW"`, `"MEDIUM"`, or `"HIGH"`.
-  - `deadline_days`: Must be an integer representing a realistic completion boundary.
   - `subtasks`: Must be a list of strings containing exactly 3 actionable steps. No objects, no nested lists.
 - Any extra fields injected by hallucination will either be stripped or fail Marshmallow schema validation.
