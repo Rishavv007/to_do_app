@@ -94,20 +94,25 @@ function TaskForm() {
   const applyAiSuggestion = () => {
     if (!aiSuggestion) return
 
-    setFormData((prev) => ({
-      ...prev,
-      priority: aiSuggestion.priority,
-    }))
-
-    if (aiSuggestion.subtasks && aiSuggestion.subtasks.length > 0) {
-      const subtasksText =
-        '\n\nSubtasks:\n' +
-        aiSuggestion.subtasks.map((t) => `- ${t}`).join('\n')
-      setFormData((prev) => ({
-        ...prev,
-        description: prev.description + subtasksText,
-      }))
+    const updates = { priority: aiSuggestion.priority }
+    if (aiSuggestion.deadline_days) {
+      const targetDate = new Date()
+      targetDate.setDate(targetDate.getDate() + aiSuggestion.deadline_days)
+      updates.deadline = targetDate.toISOString().split('T')[0]
     }
+
+    setFormData((prev) => {
+      let newDesc = prev.description || ''
+      if (aiSuggestion.subtasks && aiSuggestion.subtasks.length > 0) {
+        newDesc += '\n\nSubtasks:\n' + aiSuggestion.subtasks.map((t) => `- ${t}`).join('\n')
+      }
+      return {
+        ...prev,
+        ...updates,
+        description: newDesc.trim()
+      }
+    })
+
     setAiSuggestion(null)
   }
 
@@ -249,6 +254,11 @@ function TaskForm() {
                   {aiSuggestion.priority}
                 </Chip>
               </p>
+              {aiSuggestion.deadline_days && (
+                <p>
+                  <span className="font-medium">Deadline:</span> In {aiSuggestion.deadline_days} days
+                </p>
+              )}
               {aiSuggestion.subtasks?.length > 0 && (
                 <div className="mt-1">
                   <span className="font-medium">Subtasks:</span>

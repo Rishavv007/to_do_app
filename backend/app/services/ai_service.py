@@ -13,6 +13,7 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
     Returns:
         {
             "priority": "HIGH" | "MEDIUM" | "LOW",
+            "deadline_days": int,
             "subtasks": ["...", "...", "..."]
         }
     """
@@ -40,6 +41,7 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
         priority = "HIGH" if "urgent" in title.lower() or (description and "urgent" in description.lower()) else "MEDIUM"
         simulated_data = {
             "priority": priority,
+            "deadline_days": 3 if priority == "HIGH" else 7,
             "subtasks": [f"Understand {title}", "Implement solution", "Review and test"]
         }
         return _validate_ai_response(simulated_data)
@@ -69,12 +71,24 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
         logger.error(f"AI Service error: {e}")
         return _fallback_response()
 
+def _calculate_heuristic_deadline(priority: str) -> int:
+    """Python native heuristic logic to calculate deadline rather than asking the LLM."""
+    if priority == "HIGH":
+        return 2  # 2 days strict SLA
+    elif priority == "MEDIUM":
+        return 7  # 1 week SLA
+    elif priority == "LOW":
+        return 14 # 2 weeks SLA
+    return 7
+
 def _validate_ai_response(data: dict) -> dict:
     """Uses Marshmallow to strictly validate AI output and sanitize."""
     schema = AIResponseSchema()
     try:
         validated_data = schema.load(data)
-        logger.info("AI response successfully validated.")
+        # Compute days algorithmically in python per user request
+        validated_data["deadline_days"] = _calculate_heuristic_deadline(validated_data.get("priority", "MEDIUM"))
+        logger.info("AI response successfully validated and deadline mathematically generated.")
         return validated_data
     except ValidationError as err:
         logger.error(f"AI Schema validation failed: {err.messages}. Falling back.")
@@ -87,5 +101,6 @@ def _fallback_response() -> dict:
     logger.warning("Using AI Safe-Fallback response.")
     return {
         "priority": "MEDIUM",
+        "deadline_days": 7,
         "subtasks": ["Analyze requirement", "Create implementation plan", "Execute plan"]
     }
