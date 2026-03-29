@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import requests
+from marshmallow import ValidationError
+from app.schemas.task_schema import AIResponseSchema
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +37,15 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
     if not api_key:
         logger.info("No AI key found, using simulated AI response based on length heuristics.")
         priority = "HIGH" if "urgent" in title.lower() or (description and "urgent" in description.lower()) else "MEDIUM"
-        return {
+        simulated_data = {
             "priority": priority,
             "deadline_days": 3,
             "subtasks": [f"Understand {title}", "Implement solution", "Review and test"]
         }
+        return _validate_ai_response(simulated_data)
 
     try:
+        logger.info(f"Calling OpenAI API for task suggestions: '{title}'")
         response = requests.post(
             "https://api.openai.com/v1/chat/completions",
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
@@ -66,29 +70,21 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
         return _fallback_response()
 
 def _validate_ai_response(data: dict) -> dict:
+    """Uses Marshmallow to strictly validate AI output and sanitize."""
+    schema = AIResponseSchema()
     try:
-        priority = data.get("priority", "MEDIUM").upper()
-        if priority not in ["LOW", "MEDIUM", "HIGH"]:
-            priority = "MEDIUM"
-            
-        deadline_days = int(data.get("deadline_days", 3))
-        if deadline_days < 0:
-            deadline_days = 0
-            
-        subtasks = data.get("subtasks", [])
-        if not isinstance(subtasks, list):
-            subtasks = []
-
-        return {
-            "priority": priority,
-            "deadline_days": deadline_days,
-            "subtasks": [str(s) for s in subtasks][:3]
-        }
+        validated_data = schema.load(data)
+        logger.info("AI response successfully validated.")
+        return validated_data
+    except ValidationError as err:
+        logger.error(f"AI Schema validation failed: {err.messages}. Falling back.")
+        return _fallback_response()
     except Exception as e:
-        logger.error(f"Failed to parse AI output: {e}")
+        logger.error(f"Unexpected error validating AI output: {e}")
         return _fallback_response()
 
 def _fallback_response() -> dict:
+    logger.warning("Using AI Safe-Fallback response.")
     return {
         "priority": "MEDIUM",
         "deadline_days": 7,

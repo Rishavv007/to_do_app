@@ -1,13 +1,14 @@
 # AI System Constraints
 
-These constraints define the safety boundaries between the AI Suggestion Engine and the Core Application.
+This system is built using the Clean Architecture model, where Artificial Intelligence is treated as an unreliable third-party service rather than internal business logic.
 
-## Boundary Integrity
-- **Zero Trust**: The application never trusts AI output. All LLM responses must pass through `TaskSchema` before being processed.
-- **Read-Only Context**: The AI service has no access to the Database. It only receives strings (title/description) as input.
-- **Isolation**: Interaction with OpenAI/LLM providers must strictly live within `ai_service.py`.
+## 1. Zero Trust Policy (Validation Required)
+All AI output MUST be treated as user-input and validated before usage. The Marshmallow `AIResponseSchema` strictly intercepts API responses before the service layer proceeds. We expect the AI to lie, hallucinate, and break JSON. 
 
-## Logic Constraints
-- **No Direct DB Writes**: AI output can never trigger a `db.session.commit()` directly. It only populates a transient "Suggestion" object for user review.
-- **Enum Coercion**: Any variation of priority (e.g., "Very High") must be coerced to the closest valid Enum member (`HIGH`) or rejected for a default.
-- **Input Sanitization**: User inputs are stripped of HTML/Script tags before being sent to the AI to prevent prompt injection.
+## 2. No Direct Database Access
+- The AI service layer `ai_service.py` is fully sandboxed. It does not import `db` or SQLAlchemy models. 
+- It has zero context on past tasks or other user rows. It is purely functional: `(Title, Description) -> Dict`.
+
+## 3. Schema Enforcement
+- Coercion mechanisms (e.g. `_coerce_enums`) handle unexpected values by safely assigning a default value (e.g. `Priority.MEDIUM`) rather than allowing backend exceptions `(ValueError)` to bubble up as 500 errors.
+- Schema validation enforces strict lengths and types to guard against excessive token usage attacks.

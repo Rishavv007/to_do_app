@@ -35,3 +35,9 @@ tasks_schema = TaskSchema(many=True)
 class AISuggestionSchema(Schema):
     title = fields.Str(required=True, validate=validate.Length(min=1))
     description = fields.Str(allow_none=True)
+
+
+class AIResponseSchema(Schema):
+    priority = fields.Str(load_default="MEDIUM", validate=validate.OneOf(["LOW", "MEDIUM", "HIGH"]))
+    deadline_days = fields.Int(allow_none=True, load_default=3)
+    subtasks = fields.List(fields.Str(), load_default=list)

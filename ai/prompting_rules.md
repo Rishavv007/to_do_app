@@ -1,32 +1,18 @@
 # AI Prompting Rules
 
-To ensure system stability, all interactions with the LLM must follow these deterministic rules. The AI is a component, not a conversationalist.
+When interacting with the system's LLM, the following rules MUST be strictly adhered to:
 
-## Rules for Response Generation
-1. **Strict JSON Output**: The response must be a single JSON object. No markdown blocks (```json```), no preamble, and no conversational text.
-2. **Schema Enforcement**: Output must contain exactly three keys:
-    - `"priority"`: String (MUST be one of: `LOW`, `MEDIUM`, `HIGH`).
-    - `"deadline_days"`: Integer (Positive integer only).
-    - `"subtasks"`: List of Strings (Exactly 3 items).
-3. **Zero Hallucination**: Do not add keys such as `reasoning`, `notes`, or `tags`.
-4. **Deterministic Values**: If the title is vague, default to `MEDIUM` priority and `7` days.
+## 1. Strict JSON Format Requirement
+- The AI must return **strict JSON only**.
+- Do not include markdown codeblocks (e.g., ````json \n {...} \n ````) unless properly stripped by the backend. Use `"response_format": {"type": "json_object"}` natively via the OpenAI API parameters.
 
-## Example Good Response
-```json
-{
-  "priority": "HIGH",
-  "deadline_days": 3,
-  "subtasks": ["Initial research", "Core implementation", "Final testing"]
-}
-```
+## 2. No Natural Language
+- Never include conversational filler (e.g., "Here is your task assessment...").
+- Output should start with `{` and end with `}` immediately.
 
-## Example Bad Response (REJECTED)
-"I think this task is high priority. Here is your JSON:
-```json
-{
-  "priority": "High",
-  "days": 3,
-  "tasks": [...]
-}
-```"
-*Reason: Contains natural language, non-standard Enum case ("High" vs "HIGH"), and incorrect keys ("days" vs "deadline_days").*
+## 3. Strict Schema Mapping (No Extra Fields)
+- The JSON output MUST ONLY contain the fields explicitly defined in the `AIResponseSchema`:
+  - `priority`: Must be exactly `"LOW"`, `"MEDIUM"`, or `"HIGH"`.
+  - `deadline_days`: Must be an integer representing a realistic completion boundary.
+  - `subtasks`: Must be a list of strings containing exactly 3 actionable steps. No objects, no nested lists.
+- Any extra fields injected by hallucination will either be stripped or fail Marshmallow schema validation.

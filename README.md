@@ -16,12 +16,21 @@ The system follows a **Clean Layered Architecture** to enforce separation of con
 - **Schema Layer (Validation/Serialization)**: Uses Marshmallow to protect system boundaries. It ensures that both user input and AI output conform to strict types (e.g., date objects, specific enums).
 - **Model Layer (Persistence)**: Uses SQLAlchemy with SQLite to manage the task lifecycle. Designed to be easily swap-able for PostgreSQL.
 
-## AI Integration Design
-
-The AI integration is isolated within `ai_service.py`. It follows three defensive principles:
+## AI Safety Design
+The AI integration (managed in `ai_service.py`) operates under a strict **Zero Trust Policy**. AI is treated as an unreliable, non-deterministic external actor.
 1. **Contract Enforcement**: The AI is instructed via System Prompts to return strictly formatted JSON.
-2. **Defensive Parsing**: If the AI returns malformed JSON or unexpected fields, the system catches the error at the service boundary.
-3. **Safe Fallback**: When the AI fails, the system returns a pre-defined "Safe Default" object, ensuring the user experience remains uninterrupted.
+2. **Defensive Parsing**: If the AI returns malformed JSON, hallucinates extra fields, or times out, the system catches the error at the service boundary.
+3. **Safe Fallback**: When the AI fails, the system logs the failure and returns a pre-defined "Safe Default" object, ensuring the user experience remains fully uninterrupted.
+
+## Validation Strategy
+- **Centralized Validation**: Marshmallow enforces strict Data Transfer Object (DTO) contracts at system boundaries.
+- **AI Output Validation**: All AI responses are intercepted and piped through the `AIResponseSchema` before being processed by the system.
+- **Safe Coercion**: If standard forms or integrations bypass Enum bounds (e.g. invalid string representations), the `_coerce_enums` utility safely catches `ValueErrors` and dynamically assigns logical defaults (e.g., `Priority.MEDIUM`) rather than allowing the backend to crash with a 500 Internal Server Error.
+
+## System Guarantees
+- **AI is Unreliable**: The backend never trusts the AI.
+- **Zero Direct DB Access**: Routes and AI services have zero direct access to the database engine.
+- **100% Validated State**: All data (from humans or AI) entering the core service layer guarantees conformity to strict schemas.
 
 ## Key Technical Decisions
 

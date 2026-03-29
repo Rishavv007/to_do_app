@@ -8,11 +8,20 @@ logger = logging.getLogger(__name__)
 
 
 def _coerce_enums(data: dict) -> dict:
-    """Convert string values to their corresponding Enum members for the Task model."""
+    """Convert string values to their corresponding Enum members for the Task model safely."""
     if "priority" in data and isinstance(data["priority"], str):
-        data["priority"] = Priority(data["priority"])
+        try:
+            data["priority"] = Priority(data["priority"].upper())
+        except ValueError:
+            logger.warning(f"Invalid priority '{data['priority']}' requested, falling back to MEDIUM.")
+            data["priority"] = Priority.MEDIUM
+            
     if "status" in data and isinstance(data["status"], str):
-        data["status"] = Status(data["status"])
+        try:
+            data["status"] = Status(data["status"].upper())
+        except ValueError:
+            logger.warning(f"Invalid status '{data['status']}' requested, falling back to PENDING.")
+            data["status"] = Status.PENDING
     return data
 
 
@@ -30,6 +39,7 @@ class TaskService:
             task = Task(**loaded)
             db.session.add(task)
             db.session.commit()
+            logger.info(f"Task successfully created: '{task.title}' (ID: {task.id})")
             return task_schema.dump(task), 201
         except Exception as e:
             db.session.rollback()
