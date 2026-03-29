@@ -23,12 +23,8 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     envVars:
-      # Automatically links the live Python backend URL to your React app!
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: task-backend
-          property: url
+        sync: false
     routes:
       # Fixes the React Router 404 client-side routing issue natively
       - type: rewrite
