@@ -21,8 +21,12 @@ def evaluate_task_with_ai(title: str, description: str) -> dict:
     if not title:
         return _fallback_response()
 
+    from datetime import datetime
+    today_str = datetime.now().strftime("%A, %B %d, %Y")
+    
     # The prompt should be strictly JSON.
     prompt = f"""
+    Today's date is {today_str}.
     Given the task title '{title}' and description '{description}', please suggest:
     - priority (LOW, MEDIUM, or HIGH)
     - a reasonable deadline in days from today (integer)
